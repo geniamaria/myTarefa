@@ -1,4 +1,4 @@
-import { Plus, CheckFat, Trash } from "@phosphor-icons/react";
+import { CheckFatIcon, TrashIcon, PlusIcon } from "@phosphor-icons/react";
 import React, { useState } from "react";
 
 type Tarefa = {
@@ -54,28 +54,35 @@ export const Main = () => {
             onChange={(e) => setTarefa(e.target.value)}
           />
           <button onClick={addTarefa} className="bg-green-500 text-white">
-            <Plus size={24} />
+            <PlusIcon size={20} />
           </button>
         </label>
       </section>
       <section className=" p-4 rounded shadow-md">
         <ul className="list bg-base-100  pl-5 rounded-box">
           <li className="p-4 pb-2 ">Tarefas para semana</li>
-          {list.map((item, index) => (
-            <li key={index} className="flex justfay-between items-center m-5 ">
-              <div className="flex p-2 ">
+          <div className="flex flex-col p-2 ">
+            {list.map((item, index) => (
+              <li key={index} className="flex m-5 ">
                 <button
                   onClick={() => doneTarefa(index)}
-                  className={item.done ? "line-through text-green-500" : ""}
+                  className={
+                    item.done
+                      ? "flex m-2 line-through text-green-500"
+                      : "flex m-2"
+                  }
                 >
-                  {item.text} <CheckFat size={24} />
+                  <span className="mr-2">{item.text} </span>
+                  <span>
+                    <CheckFatIcon size={20} />
+                  </span>
                 </button>
                 <button onClick={() => deleteTarefa(index)} className="bg-red">
-                  <Trash size={24} />
+                  <TrashIcon size={20} />
                 </button>
-              </div>
-            </li>
-          ))}
+              </li>
+            ))}
+          </div>
         </ul>
       </section>
     </div>
