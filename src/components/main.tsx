@@ -1,89 +1,135 @@
 import { CheckFatIcon, TrashIcon, PlusIcon } from "@phosphor-icons/react";
-import React, { useState } from "react";
 
-type Tarefa = {
-  text: string;
-  done: boolean;
-};
+import { useEffect, useState } from "react";
+import {
+  getTarefas,
+  postTarefa,
+  putTarefa,
+  deleteTarefa,
+} from "../server/tarefa";
+import type { Tarefa } from "../server/tarefa";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export const Main = () => {
   const [tarefa, setTarefa] = useState("");
   const [list, setList] = useState<Tarefa[]>([]);
 
-  const addTarefa = () => {
-    if (tarefa.trim() !== "") {
-      setList([...list, { text: tarefa, done: false }]);
-      setTarefa("");
+  //mostrar tarefas ja disponiveis
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getTarefas();
+        if (data) setList(data);
+      } catch (error) {
+        console.error("Erro ao buscar tarefas:", error);
+      }
+    }
+    fetchData();
+  }, []);
+
+  //add new Tarefa
+  const addTarefa = async () => {
+    if (tarefa.trim() === "") return;
+    try {
+      const newTarefa = await postTarefa({ text: tarefa });
+      if (newTarefa) {
+        setList((prev) => [...prev, newTarefa]);
+        setTarefa("");
+      }
+    } catch (error) {
+      console.error("Erro ao adicionar tarefa:", error);
     }
   };
 
-  const doneTarefa = (index: number) => {
-    const newList = [...list];
-    newList[index].done = !newList[index].done;
-    setList(newList);
+  //alterar o estado do done
+  const doneTarefa = async (index: number) => {
+    const item = list[index];
+    try {
+      const atualizada = await putTarefa({
+        id: item._id,
+        done: !item.done,
+      });
+
+      if (atualizada) {
+        const novaLista = [...list];
+        novaLista[index] = atualizada;
+        setList(novaLista);
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar tarefa:", err);
+    }
   };
-  const deleteTarefa = (index: number) => {
-    const newList = list.filter((_, i) => i !== index);
-    setList(newList);
+
+  //DELETE Tarefa
+  const handleDeleteTarefa = async (index: number) => {
+    const item = list[index];
+    try {
+      await deleteTarefa({ id: item._id });
+      setList((prev) => prev.filter((_, i) => i !== index));
+    } catch (error) {
+      console.error("Erro ao deletar tarefa:", error);
+    }
   };
+
   return (
     <div className="p-10">
       <section className="m-10">
-        <label className="input">
-          <svg
-            className="h-[1em] opacity-50"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-          >
-            <g
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              strokeWidth="2.5"
-              fill="none"
-              stroke="currentColor"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </g>
-          </svg>
-          <input
-            type="search"
+        <form
+          className="flex w-full max-w-sm items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addTarefa();
+          }}
+        >
+          <Input
+            type="text"
             required
             value={tarefa}
             placeholder="Digite uma Tarefa"
             onChange={(e) => setTarefa(e.target.value)}
           />
-          <button onClick={addTarefa} className="bg-green-500 text-white">
+          <Button type="submit" variant="outline" className="bg-green-500 text-white">
             <PlusIcon size={20} />
-          </button>
-        </label>
+          </Button>
+        </form>
       </section>
-      <section className=" p-4 rounded shadow-md">
-        <ul className="list bg-base-100  pl-5 rounded-box">
-          <li className="p-4 pb-2 ">Tarefas para semana</li>
-          <div className="flex flex-col p-2 ">
-            {list.map((item, index) => (
-              <li key={index} className="flex m-5 ">
-                <button
-                  onClick={() => doneTarefa(index)}
-                  className={
-                    item.done
-                      ? "flex m-2 line-through text-green-500"
-                      : "flex m-2"
-                  }
-                >
-                  <span className="mr-2">{item.text} </span>
-                  <span>
-                    <CheckFatIcon size={20} />
-                  </span>
-                </button>
-                <button onClick={() => deleteTarefa(index)} className="bg-red">
-                  <TrashIcon size={20} />
-                </button>
-              </li>
-            ))}
-          </div>
-        </ul>
+      <section className="p-4 rounded shadow-md">
+        {list.map((item, index) => (
+          <Card key={item._id} className="mb-4">
+            <CardHeader>
+              <CardTitle className={item.done ? "text-green-600" : ""}>
+  {item.text}
+</CardTitle>
+              <CardDescription>
+                {item.done ? "Concluída" : "Pendente"}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => doneTarefa(index)}
+                className="bg-blue-500 text-white"
+              >
+                <CheckFatIcon size={20} />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleDeleteTarefa(index)}
+                className="bg-red-500 text-white"
+              >
+                <TrashIcon size={20} />
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </section>
     </div>
   );
